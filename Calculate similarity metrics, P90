@@ -1,0 +1,165 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled1.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "toc_visible": true,
+      "authorship_tag": "ABX9TyOc3Wa6ZP+A3i5qBnDdTwBW",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/UNT-5218-Project/ImageColorization/blob/main/Calculate%20similarity%20metrics%2C%20P90\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "SP1WfyEUMLMp",
+        "outputId": "b9b32ca8-ecf5-4fd9-8914-f62702440304"
+      },
+      "source": [
+        "# Code Reference: https://docs.opencv.org/3.4/d8/dc8/tutorial_histogram_comparison.html\n",
+        "\n",
+        "from __future__ import print_function\n",
+        "from __future__ import division\n",
+        "import cv2 as cv\n",
+        "import numpy as np\n",
+        "\n",
+        "\n",
+        "\n",
+        "src_base = cv.imread(\"base.png\")\n",
+        "src_test1 = cv.imread(\"test_1.png\")\n",
+        "src_test2 = cv.imread(\"test_2.png\")\n",
+        "\n",
+        "if src_base is None or src_test1 is None or src_test2 is None:\n",
+        "    print('Could not open or find the images!')\n",
+        "    exit(0)\n",
+        "\n",
+        "\n",
+        "hsv_base = cv.cvtColor(src_base, cv.COLOR_BGR2HSV)\n",
+        "hsv_test1 = cv.cvtColor(src_test1, cv.COLOR_BGR2HSV)\n",
+        "hsv_test2 = cv.cvtColor(src_test2, cv.COLOR_BGR2HSV)\n",
+        "hsv_half_down = hsv_base[hsv_base.shape[0]//2:,:]\n",
+        "\n",
+        "h_bins = 50\n",
+        "s_bins = 60\n",
+        "histSize = [h_bins, s_bins]\n",
+        "# hue varies from 0 to 179, saturation from 0 to 255\n",
+        "h_ranges = [0, 180]\n",
+        "s_ranges = [0, 256]\n",
+        "ranges = h_ranges + s_ranges # concat lists\n",
+        "# Use the 0-th and 1-st channels\n",
+        "channels = [0, 1]\n",
+        "\n",
+        "# Calculate historgrams - for base, half base, 2 test images\n",
+        "\n",
+        "hist_base = cv.calcHist([hsv_base], channels, None, histSize, ranges, accumulate=False)\n",
+        "cv.normalize(hist_base, hist_base, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)\n",
+        "hist_half_down = cv.calcHist([hsv_half_down], channels, None, histSize, ranges, accumulate=False)\n",
+        "cv.normalize(hist_half_down, hist_half_down, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)\n",
+        "hist_test1 = cv.calcHist([hsv_test1], channels, None, histSize, ranges, accumulate=False)\n",
+        "cv.normalize(hist_test1, hist_test1, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)\n",
+        "hist_test2 = cv.calcHist([hsv_test2], channels, None, histSize, ranges, accumulate=False)\n",
+        "cv.normalize(hist_test2, hist_test2, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)\n",
+        "\n",
+        "# Method 0 - Correlation #Higher the metric, better match (Between 0-1)\n",
+        "# Method 1 - Chi-square #Lower the metric, better match\n",
+        "# Method 2 - Intersection #Higher the metric, better match\n",
+        "# Method 3 - Bhattacharyya #Lower the metric, better match (Between 0-1)\n",
+        "\n",
+        "for compare_method in range(4):\n",
+        "    base_base = cv.compareHist(hist_base, hist_base, compare_method)\n",
+        "    base_half = cv.compareHist(hist_base, hist_half_down, compare_method)\n",
+        "    base_test1 = cv.compareHist(hist_base, hist_test1, compare_method)\n",
+        "    base_test2 = cv.compareHist(hist_base, hist_test2, compare_method)\n",
+        "    print('Method:', compare_method, 'Perfect, Base-Half, Base-Test(1), Base-Test(2) :',\\\n",
+        "          base_base, '/', base_half, '/', base_test1, '/', base_test2)"
+      ],
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Method: 0 Perfect, Base-Half, Base-Test(1), Base-Test(2) : 1.0 / 0.8829058398416492 / 0.28969400719093047 / 0.11591003918719164\n",
+            "Method: 1 Perfect, Base-Half, Base-Test(1), Base-Test(2) : 0.0 / 6.106192544538802 / 3100.395504473953 / 3619.9239992568105\n",
+            "Method: 2 Perfect, Base-Half, Base-Test(1), Base-Test(2) : 20.881084001099225 / 11.742956595495343 / 7.825527548615355 / 2.768380854802672\n",
+            "Method: 3 Perfect, Base-Half, Base-Test(1), Base-Test(2) : 0.0 / 0.2338282890336229 / 0.6689432627173197 / 0.8797242624175019\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "0j5w0kfeVYyM",
+        "outputId": "ba9838f2-2ad1-43db-cce3-3ca4c410e443"
+      },
+      "source": [
+        "# Sample code to print percentile.\n",
+        "import numpy as np\n",
+        "a = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])\n",
+        "p = np.percentile(a, 50) # return 50th percentile, e.g median.\n",
+        "print(\"Example percentile: \" + str(p))\n",
+        "\n",
+        "\n",
+        "# For our case we can use Correlation/Bhattacharya as they are simple and have values between (0-1) \n",
+        "# In the end we want to publish our metrics like this - \"50% of the time our model predicts atleast with 90% accuracy\" or \"90% of the time our model predicts atleast with 80% accuracy\"\n",
+        "# assume test set contains 10 images, and the correlation for those images are as below (arranged in descending order)\n",
+        "# [0.91, 0.85, 0.82, 0.81, 0.73, 0.65, 0.56, 0.54, 0.51, 0.25] - ** Using this we can say for P90, our model is 51% or better. ***\n",
+        "# numpy percentile sorts the array in ascending order. so to calculate p90, we have pass (100-90); if it is p80 we have to pass (100-80)\n",
+        "\n",
+        "model_conversions = np.array([0.91, 0.85, 0.82, 0.81, 0.73, 0.65, 0.56, 0.54, 0.51, 0.25])\n",
+        "model_accuracy_p90 = np.percentile(model_conversions, (100-90))\n",
+        "model_accuracy_p80 = np.percentile(model_conversions, (100-80)) \n",
+        "model_accuracy_p70 = np.percentile(model_conversions, (100-70))\n",
+        "model_accuracy_p60 = np.percentile(model_conversions, (100-60))\n",
+        "print(\"P90 of our model: \" + str(model_accuracy_p90) + \"; \" + str(model_accuracy_p90 * 100) + \"% or better\")\n",
+        "print(\"P80 of our model: \" + str(model_accuracy_p80) + \"; \" + str(model_accuracy_p80 * 100) + \"% or better\")\n",
+        "print(\"P70 of our model: \" + str(model_accuracy_p70) + \"; \" + str(model_accuracy_p70 * 100) + \"% or better\")\n",
+        "print(\"P60 of our model: \" + str(model_accuracy_p60) + \"; \" + str(model_accuracy_p60 * 100) + \"% or better\")\n",
+        "\n",
+        "\n",
+        "\n"
+      ],
+      "execution_count": 29,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Example percentile: 5.0\n",
+            "P90 of our model: 0.484; 48.4% or better\n",
+            "P80 of our model: 0.534; 53.400000000000006% or better\n",
+            "P70 of our model: 0.554; 55.400000000000006% or better\n",
+            "P60 of our model: 0.6140000000000001; 61.40000000000001% or better\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    }
+  ]
+}
