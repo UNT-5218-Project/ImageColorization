@@ -1,0 +1,40 @@
+body {
+}
+h1 {
+  color: white;
+  text-align: center;
+  font-family: roman;
+  font-size: 34px;
+}
+p {
+  color: white;
+  text-align: center;
+  font-family: timesnewroman;
+  font-size: 20px;
+}
+form {
+	color: white;
+	text-align: center;
+	font-family: timesnewroman;
+	font-size: 16px;
+}
+#prediction{
+	background-color: white;
+	color: black;
+	margin: auto;
+	text-align: center;
+	font-family: timesnewroman;
+	font-size: 16px;
+	width: 150px;
+	padding: 50px;
+}
+footer {
+   position: fixed;
+   left: 0;
+   bottom: 0;
+   width: 100%;
+   background-color: #777;
+   color: white;
+   text-align: center;
+   padding: 7px;
+}
