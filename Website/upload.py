@@ -8,11 +8,23 @@ from PIL import Image as PImage
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['IMAGES_DIRECTORY'] = './images_directory/'
+app.config['STATIC_DIRECTORY'] = './static/'
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
+original_width = 0
+original_height = 0
+
 uploaded_image = os.path.join(app.config['IMAGES_DIRECTORY'], 'uploadedImage.png')
+
+# for model
 resized_image = os.path.join(app.config['IMAGES_DIRECTORY'], 'resizedImage.png')
 gray_scale_image = os.path.join(app.config['IMAGES_DIRECTORY'], 'grayScaleImage.png')
+
+# for display on website
+uploaded_image_for_display = os.path.join(app.config['STATIC_DIRECTORY'], 'uploadedImageForDisplay.png')
+gray_scale_image_for_display = os.path.join(app.config['STATIC_DIRECTORY'], 'grayScaleImageForDisplay.png')
 
 
 # trained_model_path = './trained_model'
@@ -38,7 +50,11 @@ def allowed_file_formats(filename):
 #     return "test"
 
 def perform_resize(uploaded_file):
+    global original_width
+    global original_height
     uploaded_file = PImage.open(uploaded_file)
+    uploaded_file.save(uploaded_image_for_display)
+    original_width, original_height = uploaded_file.size
     new_width = 75
     new_height = 75
     resized_file = uploaded_file.resize((new_width, new_height), PImage.ANTIALIAS)
@@ -48,6 +64,11 @@ def perform_resize(uploaded_file):
 
 def convert_to_grayscale(input_file):
     PImage.open(input_file).convert('L').save(gray_scale_image)
+    return
+
+
+def convert_to_grayscale_for_display(input_file):
+    PImage.open(input_file).convert('L').save(gray_scale_image_for_display)
     return
 
 
@@ -71,14 +92,11 @@ def upload_file():
             file.save(uploaded_image)
             perform_resize(uploaded_image)
             convert_to_grayscale(resized_image)
-            return "dummy"
-            # return render_template('fileform.html', input_image_in_75_75=uploaded_image)
-            # if (get_file_resolution_69_count(processed_image) == 2):
-            #     output = perform_prediction(processed_image)
-            #     return render_template('fileform.html', output="Predicted Value: {}".format(output))
-            # else:
-            #     return render_template('fileform.html',
-            #                            output="Invalid file resolution submitted. It should be of type 69*69 pixels.")
+
+            convert_to_grayscale_for_display(uploaded_image_for_display)
+
+            return render_template('fileform.html', uploaded_image_for_display='uploadedImageForDisplay.png',
+                                   grayscaled_image_for_display='grayScaleImageForDisplay.png')
         else:
             return 'Invalid file format'
     return
